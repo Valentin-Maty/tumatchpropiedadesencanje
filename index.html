@@ -2159,9 +2159,6 @@
                 
                 let content = '<div class="conditions-text">';
                 
-                // Agregar título introductorio
-                content += `<p><strong>Condiciones para trabajar como broker externo de venta en Assetplan:</strong></p>`;
-                
                 lines.forEach((line, index) => {
                     // Limpiar la línea de comillas CSV y caracteres especiales
                     let cleanLine = line.replace(/^"/, '').replace(/"$/, '').replace(/""/g, '"').trim();
@@ -2169,10 +2166,15 @@
                     if (cleanLine.length > 0) {
                         console.log(`📄 Línea ${index + 1}: ${cleanLine}`);
                         
-                        // Formatear cada línea como una condición numerada
-                        content += `<div class="condition-item">`;
-                        content += `<strong>${index + 1}.</strong> ${cleanLine}`;
-                        content += `</div>`;
+                        if (index === 0) {
+                            // Primera línea como título (sin numeración)
+                            content += `<p><strong>${cleanLine}</strong></p>`;
+                        } else {
+                            // Resto de líneas como condiciones numeradas
+                            content += `<div class="condition-item">`;
+                            content += `<strong>${index}.</strong> ${cleanLine}`;
+                            content += `</div>`;
+                        }
                     }
                 });
                 
@@ -2223,6 +2225,8 @@
         }
 
         async function showCondicionesModal() {
+            console.log('📋 Abriendo modal de condiciones unificado');
+            
             const modal = document.getElementById('condicionesModal');
             const content = document.getElementById('condicionesContent');
             
@@ -2234,15 +2238,17 @@
             
             try {
                 // Intentar cargar desde Google Sheets
+                console.log('🔄 Cargando condiciones desde Google Sheets...');
                 const condicionesHtml = await loadCondiciones();
                 content.innerHTML = condicionesHtml;
+                console.log('✅ Modal de condiciones cargado desde Google Sheets');
             } catch (error) {
-                console.error('Error cargando condiciones desde Google Sheets:', error);
+                console.error('❌ Error cargando condiciones desde Google Sheets, usando fallback:', error);
                 
                 // Usar contenido de respaldo (condiciones de Assetplan)
                 content.innerHTML = `
                     <div class="conditions-text">
-                        <p><strong>Según lo conversado en la reunión, estas serían las condiciones para trabajar como broker externo de venta en Assetplan:</strong></p>
+                        <p><strong>Condiciones para trabajar como broker externo de venta en Assetplan:</strong></p>
                         
                         <div class="condition-item">
                             <strong>1.</strong> Todo cliente que quiera realizar una visita, debe tener por lo menos un crédito pre-aprobado. En caso de querer avanzar con una eventual promesa, el crédito ya debe estar aprobado por el banco.
@@ -2269,6 +2275,7 @@
                         </div>
                     </div>
                 `;
+                console.log('📋 Modal de condiciones cargado con contenido de fallback');
             }
         }
 
@@ -2276,54 +2283,10 @@
             document.getElementById('condicionesModal').style.display = 'none';
         }
 
+        // Función unificada - redirige al modal principal
         async function openCondicionesOnLoad() {
-            const modal = document.getElementById('condicionesModal');
-            const content = document.getElementById('condicionesContent');
-            
-            // Mostrar modal
-            modal.style.display = 'flex';
-            
-            // Mostrar loading
-            content.innerHTML = '<div class="loading-conditions"><div class="spinner"></div><p>Cargando condiciones...</p></div>';
-            
-            try {
-                // Intentar cargar desde Google Sheets
-                const condicionesHtml = await loadCondiciones();
-                content.innerHTML = condicionesHtml;
-            } catch (error) {
-                console.error('Error cargando condiciones desde Google Sheets:', error);
-                
-                // Usar contenido de respaldo (condiciones de Assetplan)
-                content.innerHTML = `
-                    <div class="conditions-text">
-                        <p><strong>Según lo conversado en la reunión, estas serían las condiciones para trabajar como broker externo de venta en Assetplan:</strong></p>
-                        
-                        <div class="condition-item">
-                            <strong>1.</strong> Todo cliente que quiera realizar una visita, debe tener por lo menos un crédito pre-aprobado. En caso de querer avanzar con una eventual promesa, el crédito ya debe estar aprobado por el banco.
-                        </div>
-                        
-                        <div class="condition-item">
-                            <strong>2.</strong> Si algún cliente quiere reservar una unidad, es obligatoria una visita previa. No se firmarán promesas sin visita realizada.
-                        </div>
-                        
-                        <div class="condition-item">
-                            <strong>3.</strong> La visita es responsabilidad de ustedes coordinar con el arrendatario. Nosotros haremos el nexo con él para que ustedes tomen contacto y coordinen.
-                        </div>
-                        
-                        <div class="condition-item">
-                            <strong>4.</strong> La comunicación con su cliente es de responsabilidad de ustedes. Si bien nosotros hacemos toda la gestión desde la firma de la promesa, el cliente es suyo y deben hacerse cargo de él y cualquier problema que tenga.
-                        </div>
-                        
-                        <div class="condition-item">
-                            <strong>5.</strong> Si bien el seguimiento de la operación es responsabilidad de assetplan se espera que puedan apoyar en solicitudes puntuales que respecten a su cliente para con su banco, tales como; solicitud de informes de tasación, solicitud de borradores de escritura, solicitudes de envío de liquidaciones de desembolso, entre otros documentos.
-                        </div>
-                        
-                        <div class="condition-item">
-                            <strong>6.</strong> Si la la compra de la propiedad es para vivienda se debe indicar en el correo donde se formaliza la reserva para poder gestionar la salida de los arrendatarios.
-                        </div>
-                    </div>
-                `;
-            }
+            console.log('📱 Abriendo modal de condiciones (primera vez)');
+            await showCondicionesModal();
         }
 
         function acceptConditions() {

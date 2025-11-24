@@ -1340,9 +1340,10 @@
                 
                 // URLs directas para CSV con GIDs correctos
                 const propsUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=0`;
-                // GID correcto para la hoja Bonos
-                const possibleBonosGids = ['725527455', '844593896', '1887029569', '1', '2', '3'];
-                let bonosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${possibleBonosGids[0]}`;
+                // GID específico para la hoja Bonos: 725527455
+                const BONOS_GID = '725527455';
+                const possibleBonosGids = [BONOS_GID]; // Usar solo el GID específico
+                let bonosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${BONOS_GID}`;
                 
                 console.log('Cargando datos de propiedades...');
                 const propsResponse = await fetch(propsUrl);
@@ -1354,37 +1355,25 @@
                 const propsText = await propsResponse.text();
                 console.log('Datos de propiedades recibidos, primeras líneas:', propsText.substring(0, 200));
                 
-                console.log('Cargando datos de bonos...');
-                let bonosText = '';
-                let bonosLoaded = false;
+                console.log(`Cargando datos de bonos desde GID específico: ${BONOS_GID}...`);
+                console.log(`📡 Cargando bonos desde: ${bonosUrl}`);
+                const bonosResponse = await fetch(bonosUrl);
                 
-                // Intentar múltiples GIDs para la hoja Bonos
-                for (let i = 0; i < possibleBonosGids.length; i++) {
-                    const gid = possibleBonosGids[i];
-                    const testBonosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
-                    
-                    try {
-                        console.log(`Intentando GID ${gid} para Bonos...`);
-                        const bonosResponse = await fetch(testBonosUrl);
-                        
-                        if (bonosResponse.ok) {
-                            bonosText = await bonosResponse.text();
-                            console.log(`✅ Éxito con GID ${gid} - Primeras líneas:`, bonosText.substring(0, 150));
-                            
-                            // Verificar que contiene datos válidos (al menos 2 líneas)
-                            if (bonosText.split('\n').length > 1) {
-                                bonosLoaded = true;
-                                break;
-                            }
-                        }
-                    } catch (e) {
-                        console.log(`❌ Falló GID ${gid}:`, e.message);
-                    }
+                if (!bonosResponse.ok) {
+                    throw new Error(`Error HTTP ${bonosResponse.status}: ${bonosResponse.statusText}`);
                 }
                 
-                if (!bonosLoaded) {
-                    throw new Error('No se pudo cargar la hoja Bonos con ningún GID');
+                const bonosText = await bonosResponse.text();
+                console.log(`✅ Bonos cargados exitosamente. Longitud: ${bonosText.length} caracteres`);
+                console.log(`📄 Primeras 200 caracteres:`, bonosText.substring(0, 200));
+                
+                // Verificar que contiene datos válidos
+                const bonosLines = bonosText.split('\n');
+                if (bonosLines.length < 2) {
+                    throw new Error(`Datos insuficientes en hoja Bonos: solo ${bonosLines.length} líneas`);
                 }
+                
+                console.log(`📊 Hoja Bonos contiene ${bonosLines.length} líneas`);
                 
                 return { 
                     propsData: parseCSV(propsText), 
@@ -1449,12 +1438,12 @@
             ];
             
             const bonosData = [
-                ['Código', 'Info1', 'Info2', 'Info3', 'Bono', 'Info5', 'Orden'],
-                ['PROP001', '', '', '', '5000000', '', '95'],
-                ['PROP002', '', '', '', '3000000', '', '88'],
-                ['PROP003', '', '', '', '4500000', '', '92'],
-                ['PROP004', '', '', '', '2500000', '', '85'],
-                ['PROP005', '', '', '', '3800000', '', '90']
+                ['Código', 'Precio_B', 'C', 'D', 'Bono_E', 'F', 'Orden_G'],
+                ['PROP001', '3000', '', '', '5000000', '', '95'],
+                ['PROP002', '2800', '', '', '3000000', '', '88'],
+                ['PROP003', '3200', '', '', '4500000', '', '92'],
+                ['PROP004', '2500', '', '', '2500000', '', '85'],
+                ['PROP005', '2900', '', '', '3800000', '', '90']
             ];
             
             return { propsData, bonosData };
@@ -1505,15 +1494,15 @@
                     const row = bonosData[i];
                     if (!row || row.length < 7) continue;
                     
-                    const codigo = row[0]; // Columna A
+                    const codigo = row[0]; // Columna A - código de propiedad
                     const precio = parseFloat(row[1]?.toString().replace(/[^0-9.-]/g, '')) || 0; // Columna B - precio
-                    const bono = parseFloat(row[4]?.toString().replace(/[^0-9.-]/g, '')) || 0; // Columna E - bono
-                    const orden = parseFloat(row[6]?.toString().replace(/[^0-9.-]/g, '')) || 0; // Columna G, limpiar formato
+                    const bono = parseFloat(row[4]?.toString().replace(/[^0-9.-]/g, '')) || 0; // Columna E - bono (índice 4)
+                    const orden = parseFloat(row[6]?.toString().replace(/[^0-9.-]/g, '')) || 0; // Columna G - orden (índice 6)
                     
                     if (codigo && codigo.trim()) {
                         bonosMap.set(codigo.trim(), { precio, bono, orden });
-                        if (i < 5) { // Solo mostrar los primeros 5 para debug
-                            console.log(`Bono fila ${i}: Código=${codigo.trim()}, B="${row[1]}"→${precio}, E="${row[4]}"→${bono}, G="${row[6]}"→${orden}`);
+                        if (i < 10) { // Mostrar más ejemplos para debug
+                            console.log(`📊 Bono fila ${i}: Código="${codigo.trim()}", Precio(B)="${row[1]}"→${precio}, Bono(E)="${row[4]}"→${bono}, Orden(G)="${row[6]}"→${orden}`);
                         }
                     }
                 }
@@ -1530,13 +1519,10 @@
                     if (!row || !row[0]) continue; // Saltar si no hay código
                     
                     const codigo = row[0].toString().trim(); // Columna A
-                    const bonoInfo = bonosMap.get(codigo);
+                    const bonoInfo = bonosMap.get(codigo) || { precio: 0, bono: 0, orden: 0 };
                     
-                    // Solo incluir propiedades con bono
-                    if (!bonoInfo) {
-                        if (i < 10) console.log(`Propiedad ${codigo} sin bono, omitiendo`);
-                        continue;
-                    }
+                    // Incluir todas las propiedades, incluso sin bono
+                    if (i < 10) console.log(`Propiedad ${codigo}:`, bonoInfo);
                     
                     // Usar el precio de la hoja Bonos (columna B)
                     const precioFinal = bonoInfo.precio || 0;
@@ -1576,12 +1562,26 @@
                     console.log(`  ${p.codigo}: Orden=${p.ordenBono}, Bono=$${p.bono}`);
                 });
                 
-                properties.sort((a, b) => b.ordenBono - a.ordenBono);
+                // Ordenar con manejo seguro de valores nulos - mayor orden primero
+                properties.sort((a, b) => {
+                    const ordenA = parseFloat(a.ordenBono) || 0;
+                    const ordenB = parseFloat(b.ordenBono) || 0;
+                    return ordenB - ordenA; // Mayor a menor
+                });
                 
                 console.log('Después de ordenar - primeras 10 propiedades:');
                 properties.slice(0, 10).forEach((p, index) => {
-                    console.log(`  ${index + 1}. ${p.codigo}: Orden=${p.ordenBono}, Bono=$${p.bono}, Precio=${p.precio} UF`);
+                    console.log(`  ${index + 1}. ${p.codigo}: Orden(G)=${p.ordenBono}, Bono(E)=$${p.bono?.toLocaleString() || 0}, Precio(B)=${p.precio?.toLocaleString() || 0} UF`);
                 });
+                
+                // Verificar que hay propiedades con bonos > 0
+                const conBonos = properties.filter(p => p.bono > 0);
+                console.log(`📊 RESUMEN: ${properties.length} propiedades total, ${conBonos.length} con bonos > 0`);
+                if (conBonos.length > 0) {
+                    const maxBono = Math.max(...conBonos.map(p => p.bono));
+                    const minBono = Math.min(...conBonos.map(p => p.bono));
+                    console.log(`💰 RANGO BONOS: $${minBono.toLocaleString()} - $${maxBono.toLocaleString()}`);
+                }
                 
                 // Verificar que el ordenamiento esté correcto
                 let ordenIncorrecto = false;
@@ -1636,7 +1636,7 @@
                     <div class="property-price-large">${Math.round(property.precio || 0).toLocaleString()} UF</div>
                     
                     <div class="property-label">BONO DISPONIBLE</div>
-                    <div class="property-bono-large">$${Math.round(property.bono || 0).toLocaleString()}</div>
+                    <div class="property-bono-large">${(property.bono && property.bono > 0) ? '$' + Math.round(property.bono).toLocaleString() : 'Sin bono'}</div>
                     
                     <button class="btn-details-large" onclick="showPropertyDetails('${property.id}')">
                         Ver Detalles
@@ -1662,8 +1662,8 @@
             // Actualizar título del modal
             document.getElementById('modalTitle').textContent = property.codigo;
             document.getElementById('modalSubtitle').innerHTML = `
-                <div style="font-size: 1.5rem; margin-bottom: 10px;">${Math.round(property.precio).toLocaleString()} UF</div>
-                <div style="color: #FFD700;">Bono: $${Math.round(property.bono).toLocaleString()}</div>
+                <div style="font-size: 1.5rem; margin-bottom: 10px;">${Math.round(property.precio || 0).toLocaleString()} UF</div>
+                <div style="color: #FFD700;">Bono: ${(property.bono && property.bono > 0) ? '$' + Math.round(property.bono).toLocaleString() : 'Sin bono'}</div>
             `;
             
             // Crear contenido del modal con todos los datos
@@ -1744,10 +1744,10 @@
                 }
                 
                 // Recopilar valores de bono y precio para rangos dinámicos
-                if (property.bono && property.bono > 0) {
+                if (property.bono != null && property.bono >= 0) {
                     bonos.push(property.bono);
                 }
-                if (property.precio && property.precio > 0) {
+                if (property.precio != null && property.precio >= 0) {
                     precios.push(property.precio);
                 }
                 
@@ -2088,55 +2088,83 @@
         // Funciones para modal de condiciones
         async function loadCondiciones() {
             const CONDICIONES_GID = '711460472';
-            console.log('🔄 Cargando condiciones desde Google Sheets...');
+            console.log('🔄 Cargando condiciones desde Google Sheets GID 711460472...');
             
-            // Intentar múltiples métodos de acceso a la hoja
+            // URLs específicas para el GID de condiciones
             const possibleUrls = [
                 `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${CONDICIONES_GID}`,
                 `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${CONDICIONES_GID}`,
-                `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=tsv&gid=${CONDICIONES_GID}`
+                `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=tsv&gid=${CONDICIONES_GID}`,
+                // Alternativas con nombre de hoja
+                `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&sheet=Condiciones`,
+                `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Condiciones`
             ];
             
             for (let i = 0; i < possibleUrls.length; i++) {
                 try {
-                    console.log(`📡 Intentando URL ${i + 1}:`, possibleUrls[i]);
-                    const response = await fetch(possibleUrls[i]);
+                    console.log(`📡 Intentando cargar condiciones - URL ${i + 1}:`, possibleUrls[i]);
+                    
+                    const response = await fetch(possibleUrls[i], {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'text/csv,text/plain,*/*',
+                        },
+                    });
                     
                     if (!response.ok) {
-                        console.warn(`❌ URL ${i + 1} falló:`, response.status);
+                        console.warn(`❌ URL ${i + 1} falló con status ${response.status}: ${response.statusText}`);
                         continue;
                     }
                     
                     const text = await response.text();
-                    console.log('✅ Datos recibidos, primeros 200 caracteres:', text.substring(0, 200));
+                    console.log(`✅ Datos recibidos desde URL ${i + 1}, longitud:`, text.length);
+                    console.log('📝 Primeros 300 caracteres:', text.substring(0, 300));
                     
-                    if (text.length < 10) {
+                    if (text.length < 20) {
                         console.warn('⚠️ Respuesta muy corta, probando siguiente URL');
                         continue;
                     }
                     
-                    // Procesar el contenido
-                    const lines = text.split('\n');
+                    // Procesar el contenido CSV
+                    const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+                    console.log(`📋 Procesando ${lines.length} líneas de condiciones`);
+                    
+                    if (lines.length === 0) {
+                        console.warn('❌ No se encontraron líneas válidas');
+                        continue;
+                    }
+                    
                     let content = '<div class="conditions-text">';
                     
                     lines.forEach((line, index) => {
-                        if (line.trim()) {
-                            // Limpiar la línea de comillas y caracteres especiales
-                            let cleanLine = line.replace(/^["']|["']$/g, '').replace(/"{2}/g, '"').trim();
+                        // Limpiar la línea de comillas CSV y caracteres especiales
+                        let cleanLine = line.replace(/^"/, '').replace(/"$/, '').replace(/""/g, '"').trim();
+                        
+                        if (cleanLine.length > 0) {
+                            console.log(`📄 Procesando línea ${index + 1}: ${cleanLine.substring(0, 100)}...`);
                             
-                            if (cleanLine.length > 0) {
-                                // Si la línea es muy corta o parece un título
-                                if (cleanLine.length < 50 && (cleanLine.includes(':') || cleanLine.toUpperCase() === cleanLine)) {
-                                    content += `<h3>${cleanLine}</h3>`;
-                                } else {
-                                    content += `<p>${cleanLine}</p>`;
-                                }
+                            // Detectar diferentes tipos de contenido
+                            if (index === 0 && cleanLine.toLowerCase().includes('condicion')) {
+                                // Primera línea que parece ser título general
+                                content += `<p><strong>${cleanLine}</strong></p>`;
+                            } else if (cleanLine.match(/^\d+[\.\)\:]/) || cleanLine.toLowerCase().startsWith('condición')) {
+                                // Líneas numeradas o que empiecen con "Condición"
+                                content += `<div class="condition-item"><strong>${cleanLine}</strong></div>`;
+                            } else if (cleanLine.length > 30) {
+                                // Contenido descriptivo largo
+                                content += `<div class="condition-item">${cleanLine}</div>`;
+                            } else if (cleanLine.includes(':') && cleanLine.length < 100) {
+                                // Títulos cortos con dos puntos
+                                content += `<p><strong>${cleanLine}</strong></p>`;
+                            } else {
+                                // Contenido general
+                                content += `<p>${cleanLine}</p>`;
                             }
                         }
                     });
                     
                     content += '</div>';
-                    console.log('✅ Condiciones cargadas exitosamente desde Google Sheets');
+                    console.log('✅ Condiciones cargadas y procesadas exitosamente desde Google Sheets');
                     return content;
                     
                 } catch (error) {
@@ -2192,59 +2220,40 @@
             content.innerHTML = '<div class="loading-conditions"><div class="spinner"></div><p>Cargando condiciones...</p></div>';
             
             try {
+                // Intentar cargar desde Google Sheets
                 const condicionesHtml = await loadCondiciones();
                 content.innerHTML = condicionesHtml;
             } catch (error) {
-                console.error('Error cargando condiciones:', error);
-                // Usar el mismo contenido que openCondicionesOnLoad
+                console.error('Error cargando condiciones desde Google Sheets:', error);
+                
+                // Usar contenido de respaldo (condiciones de Assetplan)
                 content.innerHTML = `
                     <div class="conditions-text">
-                        <h3>📋 Términos y Condiciones de Uso</h3>
-                        <p><strong>TuMatch Inmobiliario</strong> es una plataforma digital que facilita la búsqueda de propiedades inmobiliarias con bonos disponibles.</p>
+                        <p><strong>Según lo conversado en la reunión, estas serían las condiciones para trabajar como broker externo de venta en Assetplan:</strong></p>
                         
-                        <h3>🔍 Información de Propiedades</h3>
-                        <p>Los datos mostrados en esta plataforma son de carácter <strong>informativo</strong> y están sujetos a verificación. Las cifras de bonos, precios y características de las propiedades pueden variar y deben confirmarse directamente con los responsables del proyecto.</p>
+                        <div class="condition-item">
+                            <strong>1.</strong> Todo cliente que quiera realizar una visita, debe tener por lo menos un crédito pre-aprobado. En caso de querer avanzar con una eventual promesa, el crédito ya debe estar aprobado por el banco.
+                        </div>
                         
-                        <h3>🔒 Protección de Datos</h3>
-                        <p>La información personal proporcionada será tratada de acuerdo a la <strong>Ley N° 19.628 de Protección de la Vida Privada</strong> y normativas vigentes. No compartimos datos personales con terceros sin autorización expresa.</p>
+                        <div class="condition-item">
+                            <strong>2.</strong> Si algún cliente quiere reservar una unidad, es obligatoria una visita previa. No se firmarán promesas sin visita realizada.
+                        </div>
                         
-                        <h3>⚠️ Limitación de Responsabilidad</h3>
-                        <p>TuMatch Inmobiliario actúa como <strong>intermediario informativo</strong> y no se hace responsable de:</p>
-                        <ul>
-                            <li>Decisiones de compra tomadas en base a la información aquí proporcionada</li>
-                            <li>Cambios en precios, bonos o disponibilidad de propiedades</li>
-                            <li>Variaciones en las condiciones de financiamiento</li>
-                            <li>Disponibilidad real de bonos o subsidios</li>
-                        </ul>
+                        <div class="condition-item">
+                            <strong>3.</strong> La visita es responsabilidad de ustedes coordinar con el arrendatario. Nosotros haremos el nexo con él para que ustedes tomen contacto y coordinen.
+                        </div>
                         
-                        <h3>📞 Contacto y Verificación</h3>
-                        <p>Para consultas específicas, verificación de datos o proceso de compra, debe contactar <strong>directamente con los desarrolladores</strong> o inmobiliarias responsables de cada proyecto.</p>
+                        <div class="condition-item">
+                            <strong>4.</strong> La comunicación con su cliente es de responsabilidad de ustedes. Si bien nosotros hacemos toda la gestión desde la firma de la promesa, el cliente es suyo y deben hacerse cargo de él y cualquier problema que tenga.
+                        </div>
                         
-                        <h3>🏠 Responsabilidades del Usuario</h3>
-                        <p>El usuario debe:</p>
-                        <ul>
-                            <li>Verificar toda la información antes de tomar decisiones</li>
-                            <li>Consultar directamente con las inmobiliarias</li>
-                            <li>Realizar las gestiones legales correspondientes</li>
-                            <li>Confirmar disponibilidad de bonos y subsidios</li>
-                        </ul>
+                        <div class="condition-item">
+                            <strong>5.</strong> Si bien el seguimiento de la operación es responsabilidad de assetplan se espera que puedan apoyar en solicitudes puntuales que respecten a su cliente para con su banco, tales como; solicitud de informes de tasación, solicitud de borradores de escritura, solicitudes de envío de liquidaciones de desembolso, entre otros documentos.
+                        </div>
                         
-                        <h3>🔄 Actualización de Información</h3>
-                        <p>Los datos se actualizan periódicamente, pero pueden existir <strong>desfases temporales</strong>. Siempre verifique la información más reciente con las fuentes oficiales.</p>
-                        
-                        <h3>⚖️ Jurisdicción</h3>
-                        <p>Estos términos se rigen por las leyes chilenas. Cualquier disputa será resuelta en los tribunales competentes de Santiago, Chile.</p>
-                        
-                        <h3>✅ Aceptación de Términos</h3>
-                        <p>Al utilizar esta plataforma, usted <strong>reconoce haber leído</strong> y acepta estos términos y condiciones. El uso continuado implica la aceptación de futuras modificaciones.</p>
-                        
-                        <p style="margin-top: 30px; padding: 15px; background: rgba(255,107,107,0.1); border-radius: 8px; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
-                            <strong>📢 Importante:</strong> Esta plataforma es exclusivamente informativa. Para decisiones de inversión o compra, siempre consulte con profesionales del sector inmobiliario.
-                        </p>
-                        
-                        <p style="margin-top: 20px; font-size: 0.85rem; color: rgba(255,255,255,0.6); text-align: center;">
-                            <em>Última actualización: Noviembre 2024</em>
-                        </p>
+                        <div class="condition-item">
+                            <strong>6.</strong> Si la la compra de la propiedad es para vivienda se debe indicar en el correo donde se formaliza la reserva para poder gestionar la salida de los arrendatarios.
+                        </div>
                     </div>
                 `;
             }
@@ -2261,36 +2270,47 @@
             // Mostrar modal
             modal.style.display = 'flex';
             
-            // Cargar las condiciones reales desde la imagen que me mostraste
-            content.innerHTML = `
-                <div class="conditions-text">
-                    <p><strong>Según lo conversado en la reunión, estas serían las condiciones para trabajar como broker externo de venta en Assetplan:</strong></p>
-                    
-                    <div class="condition-item">
-                        <strong>1.</strong> Todo cliente que quiera realizar una visita, debe tener por lo menos un crédito pre-aprobado. En caso de querer avanzar con una eventual promesa, el crédito ya debe estar aprobado por el banco.
+            // Mostrar loading
+            content.innerHTML = '<div class="loading-conditions"><div class="spinner"></div><p>Cargando condiciones...</p></div>';
+            
+            try {
+                // Intentar cargar desde Google Sheets
+                const condicionesHtml = await loadCondiciones();
+                content.innerHTML = condicionesHtml;
+            } catch (error) {
+                console.error('Error cargando condiciones desde Google Sheets:', error);
+                
+                // Usar contenido de respaldo (condiciones de Assetplan)
+                content.innerHTML = `
+                    <div class="conditions-text">
+                        <p><strong>Según lo conversado en la reunión, estas serían las condiciones para trabajar como broker externo de venta en Assetplan:</strong></p>
+                        
+                        <div class="condition-item">
+                            <strong>1.</strong> Todo cliente que quiera realizar una visita, debe tener por lo menos un crédito pre-aprobado. En caso de querer avanzar con una eventual promesa, el crédito ya debe estar aprobado por el banco.
+                        </div>
+                        
+                        <div class="condition-item">
+                            <strong>2.</strong> Si algún cliente quiere reservar una unidad, es obligatoria una visita previa. No se firmarán promesas sin visita realizada.
+                        </div>
+                        
+                        <div class="condition-item">
+                            <strong>3.</strong> La visita es responsabilidad de ustedes coordinar con el arrendatario. Nosotros haremos el nexo con él para que ustedes tomen contacto y coordinen.
+                        </div>
+                        
+                        <div class="condition-item">
+                            <strong>4.</strong> La comunicación con su cliente es de responsabilidad de ustedes. Si bien nosotros hacemos toda la gestión desde la firma de la promesa, el cliente es suyo y deben hacerse cargo de él y cualquier problema que tenga.
+                        </div>
+                        
+                        <div class="condition-item">
+                            <strong>5.</strong> Si bien el seguimiento de la operación es responsabilidad de assetplan se espera que puedan apoyar en solicitudes puntuales que respecten a su cliente para con su banco, tales como; solicitud de informes de tasación, solicitud de borradores de escritura, solicitudes de envío de liquidaciones de desembolso, entre otros documentos.
+                        </div>
+                        
+                        <div class="condition-item">
+                            <strong>6.</strong> Si la la compra de la propiedad es para vivienda se debe indicar en el correo donde se formaliza la reserva para poder gestionar la salida de los arrendatarios.
+                        </div>
                     </div>
-                    
-                    <div class="condition-item">
-                        <strong>2.</strong> Si algún cliente quiere reservar una unidad, es obligatoria una visita previa. No se firmarán promesas sin visita realizada.
-                    </div>
-                    
-                    <div class="condition-item">
-                        <strong>3.</strong> La visita es responsabilidad de ustedes coordinar con el arrendatario. Nosotros haremos el nexo con él para que ustedes tomen contacto y coordinen.
-                    </div>
-                    
-                    <div class="condition-item">
-                        <strong>4.</strong> La comunicación con su cliente es de responsabilidad de ustedes. Si bien nosotros hacemos toda la gestión desde la firma de la promesa, el cliente es suyo y deben hacerse cargo de él y cualquier problema que tenga.
-                    </div>
-                    
-                    <div class="condition-item">
-                        <strong>5.</strong> Si bien el seguimiento de la operación es responsabilidad de assetplan se espera que puedan apoyar en solicitudes puntuales que respecten a su cliente para con su banco, tales como; solicitud de informes de tasación, solicitud de borradores de escritura, solicitudes de envío de liquidaciones de desembolso, entre otros documentos.
-                    </div>
-                    
-                    <div class="condition-item">
-                        <strong>6.</strong> Si la la compra de la propiedad es para vivienda se debe indicar en el correo donde se formaliza la reserva para poder gestionar la salida de los arrendatarios.
-                    </div>
-                </div>
-            `;
+                `;
+            }
         }
 
         function acceptConditions() {

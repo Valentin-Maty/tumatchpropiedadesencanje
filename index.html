@@ -225,35 +225,72 @@
         }
 
         .property-card-simple {
-            padding: 25px;
-            text-align: center;
+            padding: 20px;
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .property-code-corner {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .property-code-corner:hover {
+            background: rgba(0, 0, 0, 0.5);
+            transform: scale(1.05);
+            color: white;
+        }
+
+        .property-code-corner:active {
+            transform: scale(0.95);
+        }
+
+        .property-code-corner.copied {
+            background: rgba(76, 175, 80, 0.5);
+            color: white;
+        }
+
+        .copy-icon {
+            font-size: 0.8rem;
+            opacity: 0.7;
         }
 
         .property-label {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
             margin-bottom: 5px;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 500;
         }
 
-        .property-code-large {
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: white;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        }
-
         .property-price-large {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 3rem;
+            font-weight: 800;
             background: linear-gradient(135deg, #FF6B6B 0%, #FF1493 100%);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            margin-top: 10px;
+            text-align: center;
+            line-height: 1;
         }
 
         .property-bono-large {
@@ -1218,7 +1255,7 @@
                         <div class="filter-group">
                             <label class="filter-label">
                                 💰 Filtro de Bono
-                                <button id="toggleBonoFilter" class="toggle-filter-btn" onclick="toggleBonoFilterType()">📝 Manual</button>
+                                <button id="toggleBonoFilter" class="toggle-filter-btn" onclick="toggleBonoFilterType()">↕️ Min/Max</button>
                             </label>
                             <div id="bonoRangeFilter">
                                 <select id="filterBono" class="filter-select">
@@ -1237,7 +1274,7 @@
                         <div class="filter-group">
                             <label class="filter-label">
                                 🏠 Filtro de Precio (UF)
-                                <button id="togglePrecioFilter" class="toggle-filter-btn" onclick="togglePrecioFilterType()">📝 Manual</button>
+                                <button id="togglePrecioFilter" class="toggle-filter-btn" onclick="togglePrecioFilterType()">↕️ Min/Max</button>
                             </label>
                             <div id="precioRangeFilter">
                                 <select id="filterPrecio" class="filter-select">
@@ -1621,18 +1658,66 @@
             }
         }
 
+        // Función para copiar texto al portapapeles
+        async function copyToClipboard(text, element) {
+            try {
+                await navigator.clipboard.writeText(text);
+                
+                // Agregar clase de copiado
+                element.classList.add('copied');
+                const originalText = element.textContent;
+                element.innerHTML = `<span class="copy-icon">✓</span> ${text}`;
+                
+                // Remover clase después de 2 segundos
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                    element.textContent = originalText;
+                }, 2000);
+                
+                return true;
+            } catch (err) {
+                console.error('Error al copiar:', err);
+                // Fallback para navegadores sin soporte
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    // Mostrar feedback visual
+                    element.classList.add('copied');
+                    const originalText = element.textContent;
+                    element.innerHTML = `<span class="copy-icon">✓</span> ${text}`;
+                    
+                    setTimeout(() => {
+                        element.classList.remove('copied');
+                        element.textContent = originalText;
+                    }, 2000);
+                    
+                    return true;
+                } catch (fallbackErr) {
+                    document.body.removeChild(textArea);
+                    console.error('Error en fallback:', fallbackErr);
+                    return false;
+                }
+            }
+        }
+
         function createPropertyCard(property, index) {
             const card = document.createElement('div');
             card.className = 'property-card';
             card.style.animationDelay = `${index * 0.05}s`;
             
-            // Diseño simplificado centrado en código, precio y bono
+            // Nuevo diseño con código en esquina y precio grande arriba
             card.innerHTML = `
                 <div class="property-card-simple">
-                    <div class="property-label">CODIGO PROPIEDAD</div>
-                    <div class="property-code-large">${property.codigo}</div>
+                    <div class="property-code-corner" onclick="copyToClipboard('${property.codigo}', this)" title="Clic para copiar código">
+                        <span class="copy-icon">📋</span> ${property.codigo}
+                    </div>
                     
-                    <div class="property-label">PRECIO PROPIEDAD (UF)</div>
+                    <div class="property-label">PRECIO</div>
                     <div class="property-price-large">${Math.round(property.precio || 0).toLocaleString()} UF</div>
                     
                     <div class="property-label">BONO DISPONIBLE</div>
@@ -1649,6 +1734,52 @@
             
             return card;
         }
+
+        // Mapeo de nombres de columnas
+        const columnNames = {
+            'A': 'OP',
+            'B': 'CONDOMINIO',
+            'C': 'DIRECCIÓN',
+            'D': 'COMUNA',
+            'E': 'DP',
+            'F': 'REGIÓN',
+            'G': 'TIPOLOGIA',
+            'H': 'ORIENTACION',
+            'I': 'TIPO',
+            'J': 'EST',
+            'K': 'BOD',
+            'L': 'M2 INTERIOR',
+            'M': 'M2 TERR.',
+            'N': 'M2 TOTAL',
+            'O': 'M2 PONDERADO',
+            'P': 'AÑO DE CONSTRUCCIÓN',
+            'Q': 'INMOBILIARIA',
+            'R': 'ESTADO DE ADMINISTRACIÓN',
+            'S': 'CANON DE ARRIENDO',
+            'T': 'FECHA ÚLTIMO PAGO',
+            'U': 'FECHA INICIO CONTRATO',
+            'V': 'FECHA TERMINO CONTRATO',
+            'W': 'REAJUSTE PRECIO ARRIENDO',
+            'X': 'RANGO DE PRECIO',
+            'Y': 'PRECIO ESCRITURA UF',
+            'Z': '% BONO PIE',
+            'AA': 'BONO PIE UF',
+            'AB': 'PRECIO SIN BONO PIE',
+            'AC': 'PRECIO BOX',
+            'AD': 'PRECIO BOD',
+            'AE': 'PRECIO FINAL DPTO',
+            'AF': 'UF/M2',
+            'AG': '% COMISIÓN VENDEDOR', // EXCLUIR
+            'AH': 'COMISIÓN VENDEDOR UF', // EXCLUIR
+            'AI': 'ARRIENDO BRUTO ANUAL',
+            'AJ': 'RENTABILIDAD BRUTA',
+            'AK': 'LINK PUBLICACIÓN',
+            'AL': 'PUBLICACIONES DEL MES',
+            'AM': 'OPORTUNIDADES'
+        };
+
+        // Columnas a excluir del modal
+        const excludedColumns = ['AG', 'AH']; // Comisiones
 
         // Funciones para el modal
         function showPropertyDetails(propertyId) {
@@ -1670,9 +1801,12 @@
             const modalContent = document.getElementById('modalContent');
             let content = '<div class="property-detail-grid">';
             
-            // Mostrar todos los datos de allData organizados
+            // Mostrar todos los datos de allData organizados con nombres
             const sortedColumns = Object.keys(property.allData).sort();
             sortedColumns.forEach(column => {
+                // Excluir columnas de comisiones
+                if (excludedColumns.includes(column)) return;
+                
                 const value = property.allData[column];
                 if (value && value.toString().trim()) {
                     let displayValue = value;
@@ -1683,9 +1817,12 @@
                         displayValue = value.toString().replace(urlPattern, '<a href="$1" target="_blank" class="property-link">$1 🔗</a>');
                     }
                     
+                    // Usar nombre legible de la columna
+                    const columnName = columnNames[column] || `Columna ${column}`;
+                    
                     content += `
                         <div class="property-detail-item">
-                            <div class="property-detail-label">Columna ${column}</div>
+                            <div class="property-detail-label">${columnName}</div>
                             <div class="property-detail-value">${displayValue}</div>
                         </div>
                     `;
@@ -1895,14 +2032,14 @@
             if (isBonoManualMode) {
                 rangeFilter.style.display = 'none';
                 manualFilter.style.display = 'block';
-                toggleBtn.textContent = '📋 Rangos';
+                toggleBtn.textContent = '📊 Rangos';
                 toggleBtn.classList.add('active');
                 // Limpiar valores del dropdown
                 document.getElementById('filterBono').value = '';
             } else {
                 rangeFilter.style.display = 'block';
                 manualFilter.style.display = 'none';
-                toggleBtn.textContent = '📝 Manual';
+                toggleBtn.textContent = '↕️ Min/Max';
                 toggleBtn.classList.remove('active');
                 // Limpiar valores manuales
                 document.getElementById('filterBonoMin').value = '';
@@ -1920,14 +2057,14 @@
             if (isPrecioManualMode) {
                 rangeFilter.style.display = 'none';
                 manualFilter.style.display = 'block';
-                toggleBtn.textContent = '📋 Rangos';
+                toggleBtn.textContent = '📊 Rangos';
                 toggleBtn.classList.add('active');
                 // Limpiar valores del dropdown
                 document.getElementById('filterPrecio').value = '';
             } else {
                 rangeFilter.style.display = 'block';
                 manualFilter.style.display = 'none';
-                toggleBtn.textContent = '📝 Manual';
+                toggleBtn.textContent = '↕️ Min/Max';
                 toggleBtn.classList.remove('active');
                 // Limpiar valores manuales
                 document.getElementById('filterPrecioMin').value = '';

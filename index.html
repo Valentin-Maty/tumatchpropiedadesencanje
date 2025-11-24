@@ -1714,7 +1714,8 @@
             card.innerHTML = `
                 <div class="property-card-simple">
                     <div class="property-code-corner" onclick="copyToClipboard('${property.codigo}', this)" title="Clic para copiar código">
-                        <span class="copy-icon">📋</span> ${property.codigo}
+                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6); margin-bottom: 2px;">CÓDIGO</div>
+                        <div><span class="copy-icon">📋</span> ${property.codigo}</div>
                     </div>
                     
                     <div class="property-label">PRECIO</div>

@@ -1574,11 +1574,19 @@
                         allData: {}
                     };
                     
-                    // Agregar todos los datos de las columnas (excepto AE=30, AG=32, AJ=35)
-                    const excludedColumns = [30, 32, 35]; // AE, AG, AJ
+                    // Agregar todos los datos de las columnas (solo excluir AG=32 y AH=33 que son comisiones)
+                    const excludedColumns = [32, 33]; // AG y AH (comisiones del vendedor)
                     for (let colIndex = 0; colIndex < row.length; colIndex++) {
                         if (!excludedColumns.includes(colIndex) && row[colIndex]) {
-                            const columnLetter = String.fromCharCode(65 + colIndex);
+                            // Manejar columnas después de Z (AA, AB, AC, etc.)
+                            let columnLetter;
+                            if (colIndex < 26) {
+                                columnLetter = String.fromCharCode(65 + colIndex);
+                            } else {
+                                const firstLetter = String.fromCharCode(65 + Math.floor(colIndex / 26) - 1);
+                                const secondLetter = String.fromCharCode(65 + (colIndex % 26));
+                                columnLetter = firstLetter + secondLetter;
+                            }
                             property.allData[columnLetter] = row[colIndex];
                         }
                     }
@@ -1736,7 +1744,7 @@
             return card;
         }
 
-        // Mapeo de nombres de columnas
+        // Mapeo de nombres de columnas - Solo las columnas solicitadas
         const columnNames = {
             'A': 'OP',
             'B': 'CONDOMINIO',
@@ -1744,8 +1752,8 @@
             'D': 'COMUNA',
             'E': 'DP',
             'F': 'REGIÓN',
-            'G': 'TIPOLOGIA',
-            'H': 'ORIENTACION',
+            'G': 'TIPOLOGÍA',
+            'H': 'ORIENTACIÓN',
             'I': 'TIPO',
             'J': 'EST',
             'K': 'BOD',
@@ -1755,32 +1763,17 @@
             'O': 'M2 PONDERADO',
             'P': 'AÑO DE CONSTRUCCIÓN',
             'Q': 'INMOBILIARIA',
-            'R': 'ESTADO DE ADMINISTRACIÓN',
-            'S': 'CANON DE ARRIENDO',
-            'T': 'FECHA ÚLTIMO PAGO',
-            'U': 'FECHA INICIO CONTRATO',
-            'V': 'FECHA TERMINO CONTRATO',
-            'W': 'REAJUSTE PRECIO ARRIENDO',
-            'X': 'RANGO DE PRECIO',
-            'Y': 'PRECIO ESCRITURA UF',
-            'Z': '% BONO PIE',
-            'AA': 'BONO PIE UF',
-            'AB': 'PRECIO SIN BONO PIE',
-            'AC': 'PRECIO BOX',
-            'AD': 'PRECIO BOD',
+            'R': 'ESTADO DE ADMINISTRACIÓN DE PROPIEDAD',
+            'S': 'CANON DE ARRIENDO CONTRATO',
             'AE': 'PRECIO FINAL DPTO',
             'AF': 'UF/M2',
-            'AG': '% COMISIÓN VENDEDOR', // EXCLUIR
-            'AH': 'COMISIÓN VENDEDOR UF', // EXCLUIR
             'AI': 'ARRIENDO BRUTO ANUAL',
-            'AJ': 'RENTABILIDAD BRUTA',
-            'AK': 'LINK PUBLICACIÓN',
-            'AL': 'PUBLICACIONES DEL MES',
-            'AM': 'OPORTUNIDADES'
+            'AJ': 'RENTABILIDAD BRUTA (ANUAL)',
+            'AK': 'LINK PUBLICACIÓN'
         };
-
-        // Columnas a excluir del modal
-        const excludedColumns = ['AG', 'AH']; // Comisiones
+        
+        // Orden preferido para mostrar las columnas
+        const columnOrder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'AE', 'AF', 'AI', 'AJ', 'AK'];
 
         // Funciones para el modal
         function showPropertyDetails(propertyId) {
@@ -1798,16 +1791,12 @@
                 <div style="color: #FFD700;">Bono: ${(property.bono && property.bono > 0) ? '$' + Math.round(property.bono).toLocaleString() : 'Sin bono'}</div>
             `;
             
-            // Crear contenido del modal con todos los datos
+            // Crear contenido del modal solo con las columnas solicitadas
             const modalContent = document.getElementById('modalContent');
             let content = '<div class="property-detail-grid">';
             
-            // Mostrar todos los datos de allData organizados con nombres
-            const sortedColumns = Object.keys(property.allData).sort();
-            sortedColumns.forEach(column => {
-                // Excluir columnas de comisiones
-                if (excludedColumns.includes(column)) return;
-                
+            // Mostrar solo las columnas solicitadas en el orden definido
+            columnOrder.forEach(column => {
                 const value = property.allData[column];
                 if (value && value.toString().trim()) {
                     let displayValue = value;
@@ -1819,14 +1808,15 @@
                     }
                     
                     // Usar nombre legible de la columna
-                    const columnName = columnNames[column] || `Columna ${column}`;
-                    
-                    content += `
-                        <div class="property-detail-item">
-                            <div class="property-detail-label">${columnName}</div>
-                            <div class="property-detail-value">${displayValue}</div>
-                        </div>
-                    `;
+                    const columnName = columnNames[column];
+                    if (columnName) { // Solo mostrar si la columna está en nuestro mapeo
+                        content += `
+                            <div class="property-detail-item">
+                                <div class="property-detail-label">${columnName}</div>
+                                <div class="property-detail-value">${displayValue}</div>
+                            </div>
+                        `;
+                    }
                 }
             });
             

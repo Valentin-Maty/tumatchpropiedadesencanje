@@ -1255,7 +1255,7 @@
                         <div class="filter-group">
                             <label class="filter-label">
                                 💰 Filtro de Bono
-                                <button id="toggleBonoFilter" class="toggle-filter-btn" onclick="toggleBonoFilterType()">↕️ Min/Max</button>
+                                <button id="toggleBonoFilter" class="toggle-filter-btn" onclick="toggleBonoFilterType()">🎯 Cambiar a Min/Max</button>
                             </label>
                             <div id="bonoRangeFilter">
                                 <select id="filterBono" class="filter-select">
@@ -1274,7 +1274,7 @@
                         <div class="filter-group">
                             <label class="filter-label">
                                 🏠 Filtro de Precio (UF)
-                                <button id="togglePrecioFilter" class="toggle-filter-btn" onclick="togglePrecioFilterType()">↕️ Min/Max</button>
+                                <button id="togglePrecioFilter" class="toggle-filter-btn" onclick="togglePrecioFilterType()">🎯 Cambiar a Min/Max</button>
                             </label>
                             <div id="precioRangeFilter">
                                 <select id="filterPrecio" class="filter-select">
@@ -2033,14 +2033,14 @@
             if (isBonoManualMode) {
                 rangeFilter.style.display = 'none';
                 manualFilter.style.display = 'block';
-                toggleBtn.textContent = '📊 Rangos';
+                toggleBtn.textContent = '📊 Cambiar a Rangos';
                 toggleBtn.classList.add('active');
                 // Limpiar valores del dropdown
                 document.getElementById('filterBono').value = '';
             } else {
                 rangeFilter.style.display = 'block';
                 manualFilter.style.display = 'none';
-                toggleBtn.textContent = '↕️ Min/Max';
+                toggleBtn.textContent = '🎯 Cambiar a Min/Max';
                 toggleBtn.classList.remove('active');
                 // Limpiar valores manuales
                 document.getElementById('filterBonoMin').value = '';
@@ -2058,14 +2058,14 @@
             if (isPrecioManualMode) {
                 rangeFilter.style.display = 'none';
                 manualFilter.style.display = 'block';
-                toggleBtn.textContent = '📊 Rangos';
+                toggleBtn.textContent = '📊 Cambiar a Rangos';
                 toggleBtn.classList.add('active');
                 // Limpiar valores del dropdown
                 document.getElementById('filterPrecio').value = '';
             } else {
                 rangeFilter.style.display = 'block';
                 manualFilter.style.display = 'none';
-                toggleBtn.textContent = '↕️ Min/Max';
+                toggleBtn.textContent = '🎯 Cambiar a Min/Max';
                 toggleBtn.classList.remove('active');
                 // Limpiar valores manuales
                 document.getElementById('filterPrecioMin').value = '';

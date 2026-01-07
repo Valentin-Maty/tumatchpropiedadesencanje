@@ -11,6 +11,11 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        button, select, input, textarea {
+            touch-action: manipulation;
         }
 
         body {
@@ -624,7 +629,33 @@
             }
         }
 
-        /* Responsive design */
+        /* Large screens */
+        @media (min-width: 1920px) {
+            .app-container {
+                max-width: 1600px;
+            }
+            
+            .properties-grid {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            }
+        }
+        
+        /* Responsive design - Tablets */
+        @media (max-width: 1024px) {
+            .properties-grid {
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            }
+            
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .modal-content {
+                margin: 40px;
+            }
+        }
+        
+        /* Mobile landscape and tablets portrait */
         @media (max-width: 768px) {
             .app-container {
                 padding: 16px;
@@ -634,6 +665,26 @@
                 flex-direction: column;
                 gap: 24px;
                 text-align: center;
+                padding: 24px 16px;
+            }
+            
+            .action-nav {
+                flex-direction: column;
+                gap: 12px;
+                padding: 0 16px;
+            }
+            
+            .action-btn {
+                width: 100%;
+                padding: 14px 24px;
+                font-size: 0.95rem;
+            }
+            
+            .toggle-favorites-btn, .toggle-compare-btn {
+                width: 100%;
+                padding: 14px 24px;
+                font-size: 0.95rem;
+                justify-content: center;
             }
 
             .brand-text h1 {
@@ -641,17 +692,42 @@
             }
 
             .filters-section {
-                padding: 32px 24px;
+                padding: 32px 20px;
+                border-radius: 24px;
+                margin: 0 16px 32px;
             }
 
             .filters-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 0 16px;
+            }
+            
+            .section-header > div {
+                width: 100%;
+                flex-direction: column !important;
+                gap: 12px !important;
+            }
+            
+            .sort-container {
+                width: 100%;
+            }
+            
+            #sortProperties {
+                width: 100% !important;
+                min-width: unset !important;
+            }
 
             .properties-grid {
                 grid-template-columns: 1fr;
-                gap: 24px;
+                gap: 20px;
+                padding: 0 16px;
             }
 
             .property-card {
@@ -668,30 +744,147 @@
 
             .modal-content {
                 padding: 24px;
-                margin: 20px;
-                border-radius: 24px;
+                margin: 16px;
+                border-radius: 20px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            .modal-body {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .bono-badge {
+                font-size: 0.85rem;
+                padding: 8px 12px;
             }
         }
 
+        /* Mobile devices */
         @media (max-width: 480px) {
             .brand-text h1 {
-                font-size: 1.8rem;
+                font-size: 1.6rem;
+            }
+            
+            .brand-text p {
+                font-size: 0.9rem;
+            }
+            
+            .uf-display {
+                padding: 16px 20px;
+                min-width: 160px;
+            }
+            
+            .uf-value {
+                font-size: 1.1rem;
             }
 
             .filters-section {
-                padding: 24px 20px;
+                padding: 24px 16px;
+                margin: 0 12px 24px;
+            }
+            
+            .filters-title {
+                font-size: 1.5rem;
+            }
+            
+            .filters-subtitle {
+                font-size: 0.9rem;
             }
 
             .filter-card {
-                padding: 24px;
+                padding: 20px;
+            }
+            
+            .filter-label {
+                font-size: 0.95rem;
+            }
+            
+            .filter-toggle button {
+                font-size: 0.8rem;
+                padding: 8px 12px;
             }
 
             .property-price {
-                font-size: 1.8rem;
+                font-size: 1.5rem;
+            }
+            
+            .property-card {
+                border-radius: 20px;
+            }
+            
+            .card-header {
+                padding: 20px;
+            }
+            
+            .card-body {
+                padding: 20px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .cap-rate-badge {
+                padding: 10px 16px;
+            }
+            
+            .properties-count {
+                font-size: 0.9rem;
+                padding: 10px 16px;
+            }
+            
+            .empty-icon {
+                font-size: 4rem;
+            }
+            
+            .compare-table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .compare-table table {
+                min-width: 600px;
+            }
+            
+            .favorites-section, .compare-section {
+                padding: 24px 16px;
+                border-radius: 20px;
+                margin: 0 16px 24px;
+            }
+            
+            .modal-content h2 {
+                font-size: 1.5rem;
+            }
+            
+            .modal-close {
+                top: 16px;
+                right: 16px;
+                width: 40px;
+                height: 40px;
+                font-size: 24px;
             }
         }
 
         /* Sistema de Favoritos */
+        /* Small mobile devices */
+        @media (max-width: 360px) {
+            .brand-text h1 {
+                font-size: 1.4rem;
+            }
+            
+            .property-price {
+                font-size: 1.3rem;
+            }
+            
+            .filters-section {
+                padding: 20px 12px;
+            }
+        }
+        
         .favorites-section {
             background: linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, rgba(255, 165, 0, 0.04) 100%);
             backdrop-filter: blur(50px);
@@ -771,6 +964,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3);
+            white-space: nowrap;
         }
         
         .toggle-favorites-btn:hover {
@@ -859,6 +1053,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 8px 32px rgba(138, 43, 226, 0.3);
+            white-space: nowrap;
         }
         
         .toggle-compare-btn:hover {
